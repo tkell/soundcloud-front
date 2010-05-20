@@ -11,24 +11,13 @@ class LoginController < ApplicationController
   $sc_consumer = Soundcloud.consumer('YOUR_CONSUMER_KEY','YOUR_CONSUMER_SECRET')
   
   def redirect
-    sc_request_token = $sc_consumer.get_request_token()
+    callback_url = url_for :action => :callback
+    sc_request_token = $sc_consumer.get_request_token(:oauth_callback => callback_url)
     session[:sc_request_token] = sc_request_token.token
     session[:sc_request_token_secret] = sc_request_token.secret
     @authorize_url = "http://soundcloud.com/oauth/authorize?oauth_token=#{sc_request_token.token}"
 
-    #Redirect the user to authorize_url, in a platform correct browser
-    if RUBY_PLATFORM =~ /darwin|linux|mswin|mingw|bccwin|wince|emx/
-        if RUBY_PLATFORM =~ /darwin/
-          puts "here?"
-          `open #{@authorize_url}`
-        elsif RUBY_PLATFORM =~ /linux/ && `which firefox` != ""
-          `firefox #{@authorize_url}`
-        elsif RUBY_PLATFORM =~ /mswin|mingw|bccwin|wince|em/ 
-        	`start #{@authorize_url}`
-        end
-    	else
-        	puts "Please open #{@authorize_url} in a web browser.  "
-    end
+    redirect_to @authorize_url
   end
 
   # after authentication at the Soundcloud authorize page, the user will land here
@@ -36,11 +25,9 @@ class LoginController < ApplicationController
   # then we look in our db to see if we know this user already otherwise we add him.
   # he will then be redirected to the loggedin page.
   def callback
-    @oauth_verifier = params[:oauth_verifier]
     sc_request_token = OAuth::RequestToken.new($sc_consumer, session[:sc_request_token], session[:sc_request_token_secret])
-    sc_access_token = sc_request_token.get_access_token(:oauth_verifier => @oauth_verifier)  
+    sc_access_token = sc_request_token.get_access_token(:oauth_verifier => params[:oauth_verifier])  
     sc = Soundcloud.register({:access_token => sc_access_token})
-    
     me = sc.User.find_me
 
     # check if user with me.id exists, update username & oauth stuff otherwise create a new user
