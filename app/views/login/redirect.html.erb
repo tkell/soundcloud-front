@@ -1,2 +1,7 @@
-you will be redirected to the soundcloud login...
-<%=h @authorize_url %>
+<% form_tag(:controller => "login", :action => "callback") do %>
+  <%= label_tag(:oauth_verifier, "Verification Code:") %>
+  <%= text_field_tag(:oauth_verifier) %>
+  <%= submit_tag("Authorize") %>
+<% end %>
+
+You should have been redirected to the SoundCloud authorization page!  Please enter the verification code from the authorization page into the above form.
